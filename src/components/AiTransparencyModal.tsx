@@ -133,21 +133,20 @@ export function AiTransparencyModal({
         {/* Open-Source Gemma Architecture */}
         <div className="space-y-3">
           <h3 className="font-serif text-lg font-semibold text-stone-200 flex items-center gap-2">
-            <span>Google Gemma Open-Source Model</span>
+            <span>Direct Google-Hosted Gemma Architecture</span>
           </h3>
           <p className="text-xs text-stone-300 leading-relaxed">
-            Nature Quotes AI is architected to utilize Google's open-weight <strong>Gemma</strong> family (such as <code>gemma-2-9b-it</code> or <code>gemma-2-2b-it</code>). Gemma provides open, inspectable weights built from the same research and technology used to create Gemini models.
+            Nature Quotes AI connects directly to Google's officially hosted open-weight <strong>Gemma</strong> models (<code>gemma-4-26b-a4b-it</code>) via Google's GenAI developer infrastructure. This provides true Gemma inference with zero external intermediaries, no third-party account requirements, and high-performance serverless reliability.
           </p>
 
           <div className="p-4 rounded-2xl bg-stone-900 border border-stone-800 font-mono text-xs text-stone-300 space-y-1.5">
             <div className="flex items-center gap-2 text-emerald-400 font-semibold mb-1">
-              <Terminal size={14} /> Configuring Live Gemma via Environment Variables:
+              <Terminal size={14} /> Server-Side Model Routing:
             </div>
-            <div className="text-stone-400"># Set in .env or your cloud secrets:</div>
-            <div>GEMMA_API_ENDPOINT="https://api-inference.huggingface.co/models/google/gemma-2-9b-it"</div>
-            <div>GEMMA_API_KEY="hf_your_huggingface_token"</div>
-            <div>GEMMA_MODEL_NAME="google/gemma-2-9b-it"</div>
-            <div className="text-stone-500 pt-1"># Or connect local Ollama: http://localhost:11434/api/generate</div>
+            <div className="text-stone-400"># Direct Google Cloud GenAI Connection:</div>
+            <div>Model: <span className="text-emerald-300">gemma-4-26b-a4b-it</span></div>
+            <div>Provider: <span className="text-emerald-300">Google Generative AI Infrastructure</span></div>
+            <div>Fallback: <span className="text-stone-400">gemini-3.8-flash & Curated Nature Archives</span></div>
           </div>
         </div>
 

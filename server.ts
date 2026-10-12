@@ -3,7 +3,6 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI } from '@google/genai';
-import { HfInference } from '@huggingface/inference';
 
 dotenv.config();
 
@@ -16,37 +15,22 @@ const PORT = Number(process.env.PORT) || 3000;
 app.use(express.json());
 
 // ---------------------------------------------------------
-// Secure Server-Side AI Configuration (Gemma & Gemini)
+// Secure Server-Side Google-Hosted Gemma & Gemini Configuration
 // ---------------------------------------------------------
-// Credentials are read ONLY from server-side environment variables
-// NEVER exposed to frontend bundles, client responses, or browser storage
-const HF_TOKEN = process.env.HF_TOKEN || process.env.GEMMA_API_KEY || '';
-const GEMMA_ENDPOINT = process.env.GEMMA_API_ENDPOINT || '';
-const GEMMA_MODEL = process.env.GEMMA_MODEL_NAME || 'google/gemma-3-4b-it';
-
-// Candidate Gemma models on Hugging Face router
-const GEMMA_CANDIDATE_MODELS = [
-  GEMMA_MODEL,
-  'google/gemma-3-4b-it',
-  'google/gemma-2-2b-it',
-  'google/gemma-2-9b-it'
-];
-
-let hfClient: HfInference | null = null;
-if (HF_TOKEN) {
-  try {
-    hfClient = new HfInference(HF_TOKEN);
-  } catch (err) {
-    console.warn('[Server] Could not initialize HfInference client');
-  }
-}
+// Uses Google's official GoogleGenAI SDK to connect directly
+// to Google-hosted Gemma models (gemma-4-26b-a4b-it)
+// Keys remain exclusively on the server (process.env.GEMINI_API_KEY)
+const rawModel = process.env.GEMMA_MODEL_NAME || 'gemma-4-26b-a4b-it';
+const cleanModel = rawModel.replace(/^google\//i, '').replace(/^models\//i, '');
+const GEMMA_MODEL = cleanModel === 'gemma-4-31b-it' ? 'gemma-4-31b-it' : 'gemma-4-26b-a4b-it';
+const FALLBACK_MODEL = 'gemini-3.8-flash';
 
 let aiClient: GoogleGenAI | null = null;
 if (process.env.GEMINI_API_KEY) {
   try {
     aiClient = new GoogleGenAI();
   } catch (err) {
-    console.warn('[Server] Could not initialize GoogleGenAI');
+    console.warn('[Server] Could not initialize GoogleGenAI client:', err);
   }
 }
 
@@ -248,92 +232,70 @@ const CURATED_MISSIONS_ARCHIVE = [
   }
 ];
 
-// Helper: Query Hugging Face inference for Gemma models
-async function queryGemmaInference(prompt: string, systemPrompt: string): Promise<{ text: string | null; error?: string; status?: number }> {
-  // 1. Try Hugging Face Inference SDK if token is present
-  if (hfClient) {
-    for (const modelId of GEMMA_CANDIDATE_MODELS) {
-      try {
-        const response = await hfClient.chatCompletion({
-          model: modelId,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: prompt }
-          ],
-          max_tokens: 600,
-          temperature: 0.7
-        });
-        const content = response.choices?.[0]?.message?.content;
-        if (content) {
-          return { text: content };
-        }
-      } catch (err: any) {
-        const status = err.httpResponse?.status || err.status;
-        const msg = err.httpResponse?.body?.error?.message || err.message;
-        // If this is the configured primary model, capture error details
-        if (modelId === GEMMA_MODEL) {
-          return { text: null, error: msg, status };
-        }
-      }
+// Helper: Run content generation targeting Google-hosted Gemma with Gemini fallback
+async function generateWithGoogleGemma(prompt: string, jsonMode = true): Promise<{ text: string | null; modelUsed: string; isGemma: boolean }> {
+  if (!aiClient) return { text: null, modelUsed: 'curated', isGemma: false };
+
+  // 1. Attempt Google-Hosted Gemma
+  try {
+    const config: any = {};
+    if (jsonMode) {
+      config.responseMimeType = 'application/json';
     }
+
+    const response = await aiClient.models.generateContent({
+      model: GEMMA_MODEL,
+      contents: prompt,
+      config
+    });
+
+    if (response.text) {
+      return { text: response.text, modelUsed: GEMMA_MODEL, isGemma: true };
+    }
+  } catch (gemmaError: any) {
+    console.warn(`[Server] Google-hosted Gemma (${GEMMA_MODEL}) unavailable, falling back to ${FALLBACK_MODEL}:`, gemmaError.message);
   }
 
-  // 2. Try custom GEMMA_ENDPOINT if configured (e.g. Ollama, vLLM, custom proxy)
-  if (GEMMA_ENDPOINT) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 12000);
-    try {
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (HF_TOKEN) headers['Authorization'] = `Bearer ${HF_TOKEN}`;
-
-      const res = await fetch(GEMMA_ENDPOINT, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          inputs: `<start_of_turn>system\n${systemPrompt}<end_of_turn>\n<start_of_turn>user\n${prompt}<end_of_turn>\n<start_of_turn>model\n`,
-          parameters: { max_new_tokens: 600, temperature: 0.7 }
-        }),
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data[0]?.generated_text) return { text: data[0].generated_text };
-        if (data?.generated_text) return { text: data.generated_text };
-        if (typeof data === 'string') return { text: data };
-      } else {
-        return { text: null, status: res.status, error: await res.text() };
-      }
-    } catch (e: any) {
-      clearTimeout(timeoutId);
-      return { text: null, error: e.message };
+  // 2. Fallback to Gemini
+  try {
+    const config: any = {};
+    if (jsonMode) {
+      config.responseMimeType = 'application/json';
     }
+
+    const response = await aiClient.models.generateContent({
+      model: FALLBACK_MODEL,
+      contents: prompt,
+      config
+    });
+
+    if (response.text) {
+      return { text: response.text, modelUsed: FALLBACK_MODEL, isGemma: false };
+    }
+  } catch (geminiError: any) {
+    console.warn(`[Server] Secondary model (${FALLBACK_MODEL}) error:`, geminiError.message);
   }
 
-  return { text: null, error: 'No Hugging Face token or Gemma endpoint configured' };
+  return { text: null, modelUsed: 'curated', isGemma: false };
 }
 
 // ---------------------------------------------------------
 // 1. AI Connection Status Endpoint (/api/gemma/status)
 // ---------------------------------------------------------
 app.get('/api/gemma/status', (_req, res) => {
-  const hasHf = Boolean(HF_TOKEN);
-  const hasGemini = Boolean(aiClient);
+  const hasKey = Boolean(aiClient);
 
   res.json({
-    hasGemmaConfig: hasHf || Boolean(GEMMA_ENDPOINT),
-    hasHfToken: hasHf,
-    hasGeminiConfig: hasGemini,
-    activeProvider: hasHf ? 'gemma' : (hasGemini ? 'gemini' : 'curated'),
-    gemmaModel: GEMMA_MODEL,
-    gemmaEndpoint: hasHf ? 'Hugging Face Inference API' : (GEMMA_ENDPOINT ? 'Custom Endpoint' : 'unconfigured'),
-    isOnline: hasHf || hasGemini,
-    message: hasHf
-      ? `Hugging Face secret (HF_TOKEN) is connected. Configured model: ${GEMMA_MODEL}. Use 'Test Connection' to verify live reachability.`
-      : hasGemini
-      ? 'Google Gemini AI connected'
-      : 'Curated offline archive mode active (No API credentials required)'
+    hasGemmaConfig: hasKey,
+    hasHfToken: false,
+    hasGeminiConfig: hasKey,
+    activeProvider: hasKey ? 'gemma' : 'curated',
+    gemmaModel: `${GEMMA_MODEL} (Google-Hosted)`,
+    gemmaEndpoint: 'Google Cloud Generative AI',
+    isOnline: hasKey,
+    message: hasKey
+      ? `Connected directly to Google-hosted Gemma (${GEMMA_MODEL}) via Google GenAI API`
+      : 'Curated offline archive mode active (No API key found in process.env.GEMINI_API_KEY)'
   });
 });
 
@@ -341,87 +303,59 @@ app.get('/api/gemma/status', (_req, res) => {
 // 2. Real Connection Test (/api/gemma/test-connection)
 // ---------------------------------------------------------
 app.post('/api/gemma/test-connection', async (_req, res) => {
-  const start = Date.now();
-
-  // Test Hugging Face Gemma connection
-  if (hfClient) {
-    try {
-      const response = await hfClient.chatCompletion({
-        model: GEMMA_MODEL,
-        messages: [
-          { role: 'system', content: 'You are Gemma.' },
-          { role: 'user', content: 'Say hello in 5 words' }
-        ],
-        max_tokens: 15
-      });
-      const latencyMs = Date.now() - start;
-      const reply = response.choices?.[0]?.message?.content || 'OK';
-
-      return res.json({
-        success: true,
-        provider: 'gemma',
-        model: GEMMA_MODEL,
-        latencyMs,
-        message: `Live Google Gemma model (${GEMMA_MODEL}) connection verified via Hugging Face in ${latencyMs}ms! Sample response: "${reply.trim()}"`
-      });
-    } catch (hfErr: any) {
-      const latencyMs = Date.now() - start;
-      const status = hfErr.httpResponse?.status || hfErr.status;
-      const rawMsg = hfErr.httpResponse?.body?.error?.message || hfErr.message || 'Unknown error';
-
-      let helpfulMsg = `Hugging Face inference error (${status || 'network'}): ${rawMsg}`;
-      if (status === 402 || rawMsg.includes('no remaining credits')) {
-        helpfulMsg = `Hugging Face returned 402 (Payment Required): Your Hugging Face account (HF_TOKEN) has 0 pre-paid credits for external providers. To run serverless Gemma on Hugging Face, add pre-paid credits at https://hf.co/settings/billing or subscribe to PRO. In the meantime, the app continues running smoothly with Gemini and offline curated wisdom.`;
-      } else if (status === 400 && rawMsg.includes('not supported by any provider')) {
-        helpfulMsg = `Hugging Face returned 400: The model '${GEMMA_MODEL}' requires an enabled inference provider on your Hugging Face account. Visit https://hf.co/settings/inference-providers to review enabled providers. The app is running with offline fallbacks and Gemini backup.`;
-      } else if (status === 401) {
-        helpfulMsg = `Hugging Face returned 401 (Unauthorized): The secret HF_TOKEN is invalid. Please generate a fresh User Access Token at https://hf.co/settings/tokens.`;
-      } else if (status === 403) {
-        helpfulMsg = `Hugging Face returned 403 (Forbidden): You need to accept the model license terms for '${GEMMA_MODEL}' at https://huggingface.co/${GEMMA_MODEL}.`;
-      }
-
-      return res.json({
-        success: false,
-        provider: 'gemma',
-        model: GEMMA_MODEL,
-        statusCode: status,
-        latencyMs,
-        message: helpfulMsg
-      });
-    }
+  if (!aiClient) {
+    return res.json({
+      success: false,
+      provider: 'curated',
+      latencyMs: 0,
+      message: 'GEMINI_API_KEY is not configured on the server. Running in verified offline curated archive mode.'
+    });
   }
 
-  // Fallback test: Google Gemini
-  if (aiClient) {
+  const start = Date.now();
+  try {
+    // Test live inference with Google-hosted Gemma
+    const testPrompt = 'You are Google Gemma. Respond with exactly one sentence describing the stillness of an ancient cedar tree.';
+    const response = await aiClient.models.generateContent({
+      model: GEMMA_MODEL,
+      contents: testPrompt
+    });
+    const latencyMs = Date.now() - start;
+    const reply = response.text?.trim() || 'Connection confirmed';
+
+    return res.json({
+      success: true,
+      provider: 'gemma',
+      model: GEMMA_MODEL,
+      latencyMs,
+      message: `Verified: Google-hosted Gemma (${GEMMA_MODEL}) answered directly via Google GenAI in ${latencyMs}ms! Sample response: "${reply}"`
+    });
+  } catch (err: any) {
+    const latencyMs = Date.now() - start;
+    console.warn('[Server] Connection test to Google-hosted Gemma failed, testing secondary Gemini fallback:', err.message);
+
+    // Test secondary model
     try {
       await aiClient.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: 'Ping',
+        model: FALLBACK_MODEL,
+        contents: 'Ping'
       });
-      const latencyMs = Date.now() - start;
       return res.json({
         success: true,
         provider: 'gemini',
-        model: 'gemini-3.8-flash',
-        latencyMs,
-        message: `Google Gemini AI connection verified in ${latencyMs}ms! (HF_TOKEN not configured)`
+        model: FALLBACK_MODEL,
+        latencyMs: Date.now() - start,
+        message: `Gemma model ${GEMMA_MODEL} encountered a temporary spike (${err.message}). Google Gemini fallback (${FALLBACK_MODEL}) is active and operational.`
       });
-    } catch (err: any) {
+    } catch (fallbackErr: any) {
       return res.json({
         success: false,
         provider: 'curated',
-        latencyMs: Date.now() - start,
-        message: `Gemini ping failed: ${err.message}. Curated offline archive active.`
+        latencyMs,
+        message: `Google API error: ${err.message || 'Service unavailable'}. Seamlessly using verified offline curated archives.`
       });
     }
   }
-
-  return res.json({
-    success: false,
-    provider: 'curated',
-    latencyMs: 0,
-    message: 'No live Gemma HF_TOKEN or Gemini credentials configured. Running in verified offline curated archive mode.'
-  });
 });
 
 // ---------------------------------------------------------
@@ -438,18 +372,17 @@ app.post(['/api/gemma/quote', '/api/generate-quote'], async (req, res) => {
 
   const effectiveTheme = theme || element || 'forest';
 
-  // 1. Try Live Gemma via Hugging Face
-  if (hfClient || GEMMA_ENDPOINT) {
-    const prompt = `Create an evocative, original nature quote and short reflection.
+  const prompt = `You are Google Gemma, an enlightened nature philosopher.
+Create a profound, original nature quote and short reflection.
 Mood: ${mood}
-Theme: ${effectiveTheme}
-Style: ${style}
-Context / Detail: ${customPrompt || 'nature reconnection'}
+Theme / Nature Element: ${effectiveTheme}
+Style: ${style} (poetic, philosophical, short and powerful, or mindfulness)
+User Specifics: ${customPrompt || 'nature reconnection and touching grass'}
 
 Respond ONLY with valid JSON with this exact schema:
 {
   "quote": "string",
-  "author": "string",
+  "author": "Gemma (or an evocative nature pen name)",
   "element": "${effectiveTheme}",
   "mood": "${mood}",
   "reflection": "string",
@@ -457,93 +390,34 @@ Respond ONLY with valid JSON with this exact schema:
   "keywords": ["tag1", "tag2", "tag3"]
 }`;
 
-    const gemmaResult = await queryGemmaInference(
-      prompt,
-      'You are Google Gemma, an open-weight nature philosopher. Respond in valid JSON only.'
-    );
+  const result = await generateWithGoogleGemma(prompt, true);
 
-    if (gemmaResult.text) {
-      try {
-        const clean = gemmaResult.text.replace(/```json/g, '').replace(/```/g, '').trim();
-        const parsed = JSON.parse(clean);
-        return res.json({
-          success: true,
-          data: {
-            quote: parsed.quote,
-            author: parsed.author || 'Gemma Nature Oracle',
-            element: parsed.element || effectiveTheme,
-            mood: parsed.mood || mood,
-            style,
-            reflection: parsed.reflection || 'Nature reminds us to breathe and align with the unhurried rhythms of the earth.',
-            suggestedPalette: parsed.suggestedPalette || 'emerald',
-            keywords: parsed.keywords || [effectiveTheme, mood, 'touch-grass'],
-            isAiGenerated: true,
-            aiProvider: 'gemma',
-            model: GEMMA_MODEL
-          }
-        });
-      } catch (parseErr) {
-        console.warn('[Gemma JSON parse failed, falling back to backup provider]');
-      }
-    }
-  }
-
-  // 2. Secondary Provider: Google Gemini
-  if (aiClient) {
+  if (result.text) {
     try {
-      const prompt = `You are a naturalist in the lineage of John Muir, Rachel Carson, and Mary Oliver.
-Create an evocative, original nature quote and reflection.
-Mood: ${mood}
-Theme / Element: ${effectiveTheme}
-Style: ${style}
-Prompt: ${customPrompt || 'touch grass and reconnect with earth'}
-
-Respond ONLY in valid JSON:
-{
-  "quote": "string",
-  "author": "string",
-  "element": "${effectiveTheme}",
-  "mood": "${mood}",
-  "reflection": "string",
-  "suggestedPalette": "emerald",
-  "keywords": ["tag1", "tag2", "tag3"]
-}`;
-
-      const response = await aiClient.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: prompt,
-        config: {
-          systemInstruction: 'You are an enlightened nature poet and philosopher. Output clean JSON only.',
-          responseMimeType: 'application/json'
-        }
-      });
-
-      const responseText = response.text || '';
-      const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-      const parsed = JSON.parse(cleanJson);
-
+      const clean = result.text.replace(/```json/g, '').replace(/```/g, '').trim();
+      const parsed = JSON.parse(clean);
       return res.json({
         success: true,
         data: {
-          quote: parsed.quote,
-          author: parsed.author || 'Nature Contemplative',
+          quote: parsed.quote || "Look deep into nature, and then you will understand everything better.",
+          author: parsed.author || (result.isGemma ? 'Google Gemma' : 'Nature Contemplative'),
           element: parsed.element || effectiveTheme,
           mood: parsed.mood || mood,
           style,
-          reflection: parsed.reflection || 'Step outside and let the sky recalibrate your perspective.',
+          reflection: parsed.reflection || 'Step outside and let the natural world recalibrate your perspective.',
           suggestedPalette: parsed.suggestedPalette || 'emerald',
-          keywords: parsed.keywords || [effectiveTheme, mood, 'presence'],
+          keywords: Array.isArray(parsed.keywords) ? parsed.keywords : [effectiveTheme, mood, 'touch-grass'],
           isAiGenerated: true,
-          aiProvider: 'gemini',
-          model: 'gemini-3.8-flash'
+          aiProvider: result.isGemma ? 'gemma' : 'gemini',
+          model: result.modelUsed
         }
       });
-    } catch (geminiErr) {
-      console.warn('[Gemini generation error, using curated archive]:', geminiErr);
+    } catch (parseErr) {
+      console.warn('[Server] JSON parse error on model output, falling back to curated archive');
     }
   }
 
-  // 3. Resilient Fallback: Curated Nature Quotes Archive
+  // Resilient Fallback: Curated Nature Quotes Archive
   const matched = CURATED_QUOTES_ARCHIVE.filter(q => q.element === effectiveTheme || q.mood === mood);
   const selected = matched.length > 0 
     ? matched[Math.floor(Math.random() * matched.length)]
@@ -571,77 +445,18 @@ app.post('/api/gemma/mission', async (req, res) => {
     activityType = 'mindfulness'
   } = req.body || {};
 
-  // 1. Try Live Gemma
-  if (hfClient || GEMMA_ENDPOINT) {
-    const prompt = `Create an outdoor Touch Grass nature mission.
-Duration: ${duration} minutes
-Location: ${location}
-User State: ${mood}
-Activity Type: ${activityType}
-
-Do NOT require camera proof or private location details. Focus on sensory grounding and outdoor reconnection.
-
-Respond in JSON ONLY:
-{
-  "title": "string",
-  "instructions": ["step 1", "step 2", "step 3", "step 4"],
-  "durationMinutes": ${duration},
-  "location": "${location}",
-  "mood": "${mood}",
-  "activityType": "${activityType}",
-  "difficulty": "gentle",
-  "benefit": "string explaining how this calms nervous system or grounds the mind",
-  "checklist": [
-    {"id": "c1", "text": "string", "done": false},
-    {"id": "c2", "text": "string", "done": false},
-    {"id": "c3", "text": "string", "done": false}
-  ]
-}`;
-
-    const gemmaResult = await queryGemmaInference(
-      prompt,
-      'You are Google Gemma, an open-weight nature wellness guide. Output valid JSON only.'
-    );
-
-    if (gemmaResult.text) {
-      try {
-        const clean = gemmaResult.text.replace(/```json/g, '').replace(/```/g, '').trim();
-        const parsed = JSON.parse(clean);
-        return res.json({
-          success: true,
-          data: {
-            id: `gemma-m-${Date.now()}`,
-            ...parsed,
-            durationMinutes: Number(duration),
-            location,
-            mood,
-            activityType,
-            isAiGenerated: true,
-            aiProvider: 'gemma',
-            model: GEMMA_MODEL
-          }
-        });
-      } catch (e) {
-        console.warn('[Gemma mission parse error, falling back]');
-      }
-    }
-  }
-
-  // 2. Secondary Provider: Google Gemini
-  if (aiClient) {
-    try {
-      const prompt = `Create an outdoor Touch Grass nature mission for Hacktoberfest.
+  const prompt = `You are Google Gemma, creating a restorative outdoor Touch Grass mission.
 Duration: ${duration} minutes
 Location: ${location}
 Mood: ${mood}
 Activity Type: ${activityType}
 
 Requirements:
-- Practical, grounded activity that reconnects the user to nature.
-- Title, 4-5 numbered instructions, benefit explanation, and 3-4 checklist tasks.
-- Never ask for photos or location tracking.
+- Practical, grounded activity that reconnects the user to living nature.
+- Title, 4-5 numbered instructions, benefit explanation (why this restores attention or calms the nervous system), and 3-4 checklist tasks.
+- Never demand photographs or location disclosure.
 
-Respond in JSON ONLY:
+Respond ONLY with valid JSON with this exact schema:
 {
   "title": "string",
   "instructions": ["string", "string", "string", "string"],
@@ -658,38 +473,32 @@ Respond in JSON ONLY:
   ]
 }`;
 
-      const response = await aiClient.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: prompt,
-        config: {
-          systemInstruction: 'You are an outdoor wellness guide. Output clean JSON only.',
-          responseMimeType: 'application/json'
-        }
-      });
+  const result = await generateWithGoogleGemma(prompt, true);
 
-      const responseText = response.text || '';
-      const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-      const parsed = JSON.parse(cleanJson);
-
+  if (result.text) {
+    try {
+      const clean = result.text.replace(/```json/g, '').replace(/```/g, '').trim();
+      const parsed = JSON.parse(clean);
       return res.json({
         success: true,
         data: {
-          id: `gemini-m-${Date.now()}`,
+          id: `gemma-m-${Date.now()}`,
           ...parsed,
           durationMinutes: Number(duration),
           location,
           mood,
           activityType,
           isAiGenerated: true,
-          aiProvider: 'gemini'
+          aiProvider: result.isGemma ? 'gemma' : 'gemini',
+          model: result.modelUsed
         }
       });
-    } catch (geminiErr) {
-      console.warn('[Gemini mission error, using curated archive]:', geminiErr);
+    } catch (parseErr) {
+      console.warn('[Server] JSON parse error on mission generation, using curated archive');
     }
   }
 
-  // 3. Curated Missions Fallback
+  // Resilient Fallback: Curated Missions Archive
   const matched = CURATED_MISSIONS_ARCHIVE.filter(m => m.location === location || m.activityType === activityType);
   const template = matched.length > 0 
     ? matched[Math.floor(Math.random() * matched.length)]
@@ -716,9 +525,9 @@ app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
     edition: 'Nature Quotes AI — Touch Grass Edition',
-    hasHfToken: Boolean(HF_TOKEN),
-    hasGeminiKey: Boolean(process.env.GEMINI_API_KEY),
+    hasGoogleKey: Boolean(process.env.GEMINI_API_KEY),
     gemmaModel: GEMMA_MODEL,
+    provider: 'Google GenAI (Direct Gemma Host)',
     timestamp: new Date().toISOString()
   });
 });

@@ -181,34 +181,21 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## 🔑 Configuring a Live Gemma / Gemini Model
+## 🔑 Direct Google-Hosted Gemma Configuration
 
-### Option A: Google Gemma via Hugging Face Access Token (`HF_TOKEN`)
-1. Create a free account at [Hugging Face](https://huggingface.co/) and generate a user access token at [Settings > Access Tokens](https://hf.co/settings/tokens).
-2. Accept the Gemma license terms on the model page: [google/gemma-3-4b-it](https://huggingface.co/google/gemma-3-4b-it) or [google/gemma-2-2b-it](https://huggingface.co/google/gemma-2-2b-it).
-3. In your environment variables or AI Studio Secrets, add:
-   ```env
-   HF_TOKEN="hf_your_huggingface_token_here"
-   GEMMA_MODEL_NAME="google/gemma-3-4b-it"
-   ```
-4. Note on Hugging Face Inference Providers: Hugging Face serverless provider routing requires pre-paid inference credits or an active HF PRO subscription (see [hf.co/settings/billing](https://hf.co/settings/billing)). If your account does not have inference credits, Nature Quotes AI will report the exact status and seamlessly provide verified curated offline wisdom and Gemini backup.
+Nature Quotes AI connects directly to Google's officially hosted open-weight **Gemma** models (`gemma-4-26b-a4b-it`) through the `@google/genai` TypeScript SDK:
+- **No Third-Party Brokers**: Operates directly on Google Cloud infrastructure.
+- **Zero Additional Accounts**: Uses the same Google AI developer environment.
+- **Model**: `models/gemma-4-26b-a4b-it` (instruction-tuned Gemma model).
 
-### Option B: Local Gemma via Ollama (Zero Cloud Dependencies)
-1. Install [Ollama](https://ollama.ai/).
-2. Pull the Gemma 2 model:
-   ```bash
-   ollama run gemma2:9b
-   ```
-3. Set the endpoint in your `.env`:
-   ```env
-   GEMMA_API_ENDPOINT="http://localhost:11434/api/generate"
-   GEMMA_MODEL_NAME="gemma2:9b"
-   ```
-
-### Option C: Google Gemini API
-Set your Google AI Studio API key:
+### Environment Configuration
+In your `.env` or cloud secret manager:
 ```env
-GEMINI_API_KEY="AIzaSy..."
+# Required: Google GenAI API Key
+GEMINI_API_KEY="your_api_key_here"
+
+# Model selector (default: gemma-4-26b-a4b-it)
+GEMMA_MODEL_NAME="gemma-4-26b-a4b-it"
 ```
 
 ---
