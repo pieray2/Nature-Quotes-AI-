@@ -1,0 +1,241 @@
+import { NatureQuote } from '../types';
+
+export const INITIAL_QUOTES: NatureQuote[] = [
+  {
+    id: 'quote-1',
+    quote: "The clearest way into the Universe is through a forest wilderness.",
+    author: "John Muir",
+    source: "John of the Mountains",
+    element: "forest",
+    mood: "wonder",
+    reflection: "When you step beneath the cedar and pine, the chatter of the ego dissolves. The silence of ancient woods is not empty; it is full of living answers.",
+    keywords: ["wilderness", "forest", "solitude", "clarity"],
+    bgImage: "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1600&q=80",
+    suggestedPalette: "emerald"
+  },
+  {
+    id: 'quote-2',
+    quote: "The sea does not reward those who are too anxious, too greedy, or too impatient. One should lie empty, open, choiceless as a beach.",
+    author: "Anne Morrow Lindbergh",
+    source: "Gift from the Sea",
+    element: "ocean",
+    mood: "peace",
+    reflection: "Patience is the currency of the coastline. Waves do not rush to deliver their gifts; they teach us to be receptive vessels rather than restless seekers.",
+    keywords: ["sea", "stillness", "patience", "waves"],
+    bgImage: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80",
+    suggestedPalette: "azure"
+  },
+  {
+    id: 'quote-3',
+    quote: "Mountains are not stadiums where I satisfy my ambition to achieve, they are the cathedrals where I practice my religion.",
+    author: "Anatoli Boukreev",
+    source: "The Climb",
+    element: "mountains",
+    mood: "resilience",
+    reflection: "High ridges strip away pretense. In the rarefied air of summits, we do not conquer peaks; we conquer our own frail doubts.",
+    keywords: ["peaks", "reverence", "cathedrals", "spirit"],
+    bgImage: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1600&q=80",
+    suggestedPalette: "slate"
+  },
+  {
+    id: 'quote-4',
+    quote: "Listen to the rain. Each drop is a letter written by the sky, asking the soil for forgiveness and offering rebirth.",
+    author: "Rabindranath Tagore",
+    element: "rain",
+    mood: "healing",
+    reflection: "Rain is nature's forgiveness. Let the stormy showers wash over whatever grief or weariness you carried into today.",
+    keywords: ["rain", "renewal", "petrichor", "sky"],
+    bgImage: "https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&w=1600&q=80",
+    suggestedPalette: "teal"
+  },
+  {
+    id: 'quote-5',
+    quote: "The nitrogen in our DNA, the calcium in our teeth, the iron in our blood were made in the interiors of collapsing stars. We are made of starstuff.",
+    author: "Carl Sagan",
+    source: "Cosmos",
+    element: "sky",
+    mood: "wonder",
+    reflection: "You are not an alien traveler perched on a speck of cosmic dust. You are the universe alive, conscious, and beholding its own infinite beauty.",
+    keywords: ["cosmos", "stars", "origin", "eternity"],
+    bgImage: "https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?auto=format&fit=crop&w=1600&q=80",
+    suggestedPalette: "indigo"
+  },
+  {
+    id: 'quote-6',
+    quote: "I go to nature to be soothed and healed, and to have my senses put in order.",
+    author: "John Burroughs",
+    source: "Time and Change",
+    element: "forest",
+    mood: "healing",
+    reflection: "Modern noise fragments our perception. A half hour among mossy stones and dappled canopy reassembles the mind into harmony.",
+    keywords: ["healing", "senses", "restoration", "trees"],
+    bgImage: "https://images.unsplash.com/photo-1511497584788-87676104235f?auto=format&fit=crop&w=1600&q=80",
+    suggestedPalette: "moss"
+  },
+  {
+    id: 'quote-7',
+    quote: "To sit in the shade on a fine day, and look upon verdure, is the most perfect refreshment.",
+    author: "Jane Austen",
+    source: "Mansfield Park",
+    element: "meadow",
+    mood: "peace",
+    reflection: "The finest luxury in existence requires neither expense nor fanfare: merely an afternoon shade tree and a heart willing to be still.",
+    keywords: ["verdure", "meadow", "shade", "contentment"],
+    bgImage: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1600&q=80",
+    suggestedPalette: "amber"
+  },
+  {
+    id: 'quote-8',
+    quote: "Water is fluid, soft, and yielding. But water will wear away rock, which is rigid and cannot yield. What is soft is strong.",
+    author: "Lao Tzu",
+    source: "Tao Te Ching",
+    element: "river",
+    mood: "resilience",
+    reflection: "Resistance drains us; fluidity preserves us. Flow around rigid obstacles with gentle persistence, and time will carve your path.",
+    keywords: ["water", "yielding", "strength", "tao"],
+    bgImage: "https://images.unsplash.com/photo-1432405972618-c60b0225b8f9?auto=format&fit=crop&w=1600&q=80",
+    suggestedPalette: "azure"
+  },
+  {
+    id: 'quote-9',
+    quote: "In the depth of winter, I finally learned that within me there lay an invincible summer.",
+    author: "Albert Camus",
+    source: "Return to Tipasa",
+    element: "winter",
+    mood: "resilience",
+    reflection: "When the frost is bitter and life appears dormant, trust the unseen sap quietly gathering strength beneath the frozen crust.",
+    keywords: ["winter", "endurance", "light", "hope"],
+    bgImage: "https://images.unsplash.com/photo-1483921020237-2ff51e8e4b22?auto=format&fit=crop&w=1600&q=80",
+    suggestedPalette: "slate"
+  },
+  {
+    id: 'quote-10',
+    quote: "Those who contemplate the beauty of the earth find reserves of strength that will endure as long as life lasts.",
+    author: "Rachel Carson",
+    source: "The Sense of Wonder",
+    element: "ocean",
+    mood: "healing",
+    reflection: "The natural world possesses an inexhaustible spring of vitality. Drink deeply from its horizons when your spirits run parched.",
+    keywords: ["earth", "reserves", "beauty", "endurance"],
+    bgImage: "https://images.unsplash.com/photo-1498092651296-641e88c3b057?auto=format&fit=crop&w=1600&q=80",
+    suggestedPalette: "azure"
+  },
+  {
+    id: 'quote-11',
+    quote: "You do not have to be good. You only have to let the soft animal of your body love what it loves.",
+    author: "Mary Oliver",
+    source: "Wild Geese",
+    element: "wildlife",
+    mood: "mindfulness",
+    reflection: "Drop the burden of artificial perfection. You are a child of this living earth, breathing the same air as the wild geese flying overhead.",
+    keywords: ["wildlife", "grace", "acceptance", "geese"],
+    bgImage: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1600&q=80",
+    suggestedPalette: "emerald"
+  },
+  {
+    id: 'quote-12',
+    quote: "Adopt the pace of nature: her secret is patience.",
+    author: "Ralph Waldo Emerson",
+    element: "forest",
+    mood: "peace",
+    reflection: "No acorn strains to become an oak in a single week. Give your own growth the generous permission of slow, deep roots.",
+    keywords: ["patience", "pace", "seasons", "trees"],
+    bgImage: "https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?auto=format&fit=crop&w=1600&q=80",
+    suggestedPalette: "moss"
+  },
+  {
+    id: 'quote-13',
+    quote: "The earth has music for those who listen.",
+    author: "William Shakespeare",
+    element: "sky",
+    mood: "wonder",
+    reflection: "Close your eyes: the wind through leaves is an ancient cello, the bird call a silver flute, the stream a steady percussion.",
+    keywords: ["music", "listening", "wind", "harmony"],
+    bgImage: "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=1600&q=80",
+    suggestedPalette: "dusk"
+  },
+  {
+    id: 'quote-14',
+    quote: "Only if we understand, will we care. Only if we care, will we help. Only if we help, shall all be saved.",
+    author: "Jane Goodall",
+    source: "Reason for Hope",
+    element: "wildlife",
+    mood: "gratitude",
+    reflection: "Every living creature is our kin in this grand tapestry. In tending to them, we protect the very fabric of our own survival.",
+    keywords: ["care", "wildlife", "conservation", "compassion"],
+    bgImage: "https://images.unsplash.com/photo-1564349683136-77e08dba1ef7?auto=format&fit=crop&w=1600&q=80",
+    suggestedPalette: "emerald"
+  },
+  {
+    id: 'quote-15',
+    quote: "A quiet secluded life in the country, with the possibility of being useful to people... and nature, of which one could never tire.",
+    author: "Leo Tolstoy",
+    source: "Family Happiness",
+    element: "meadow",
+    mood: "solitude",
+    reflection: "Simplicity is the highest form of sophistication. A simple garden and honest morning sunlight provide all the wealth a soul needs.",
+    keywords: ["solitude", "simplicity", "peace", "country"],
+    bgImage: "https://images.unsplash.com/photo-1502082553048-f009c37129b9?auto=format&fit=crop&w=1600&q=80",
+    suggestedPalette: "amber"
+  },
+  {
+    id: 'quote-16',
+    quote: "There is a pleasure in the pathless woods, There is a rapture on the lonely shore, There is society where none intrudes, By the deep sea, and music in its roar.",
+    author: "Lord Byron",
+    source: "Childe Harold's Pilgrimage",
+    element: "forest",
+    mood: "solitude",
+    reflection: "Solitude in nature is never loneliness; it is communion. When the crowd disappears, the world's deepest whispers become audible.",
+    keywords: ["woods", "rapture", "shore", "solitude"],
+    bgImage: "https://images.unsplash.com/photo-1473448912268-2022ce9509d8?auto=format&fit=crop&w=1600&q=80",
+    suggestedPalette: "emerald"
+  },
+  {
+    id: 'quote-17',
+    quote: "Climb the mountains and get their good tidings. Nature's peace will flow into you as sunshine flows into trees.",
+    author: "John Muir",
+    source: "Our National Parks",
+    element: "mountains",
+    mood: "peace",
+    reflection: "Winds will blow their freshness into you, and storms their energy, while cares drop off like autumn leaves.",
+    keywords: ["mountains", "peace", "sunshine", "renewal"],
+    bgImage: "https://images.unsplash.com/photo-1486870591958-9b9d0d1dda99?auto=format&fit=crop&w=1600&q=80",
+    suggestedPalette: "slate"
+  },
+  {
+    id: 'quote-18',
+    quote: "The dawn is wild with birds; the lake is polished mirror. What need have we of tomorrow when this hour is so absolute?",
+    author: "Nan Shepherd",
+    source: "The Living Mountain",
+    element: "river",
+    mood: "mindfulness",
+    reflection: "The present moment in the wild is not a bridge to somewhere else. It is an end and a sanctuary in itself.",
+    keywords: ["dawn", "stillness", "presence", "lake"],
+    bgImage: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1600&q=80",
+    suggestedPalette: "teal"
+  }
+];
+
+export const ELEMENT_METADATA = [
+  { id: 'all', label: 'All Elements', icon: 'Sparkles', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' },
+  { id: 'forest', label: 'Forest & Pines', icon: 'Trees', color: 'bg-emerald-950/60 text-emerald-300 border-emerald-700/40' },
+  { id: 'ocean', label: 'Ocean & Waves', icon: 'Waves', color: 'bg-cyan-950/60 text-cyan-300 border-cyan-700/40' },
+  { id: 'mountains', label: 'High Peaks', icon: 'Mountain', color: 'bg-slate-900/60 text-slate-300 border-slate-700/40' },
+  { id: 'sky', label: 'Cosmos & Sky', icon: 'Sun', color: 'bg-indigo-950/60 text-indigo-300 border-indigo-700/40' },
+  { id: 'rain', label: 'Rain & Mist', icon: 'CloudRain', color: 'bg-teal-950/60 text-teal-300 border-teal-700/40' },
+  { id: 'meadow', label: 'Meadow & Bloom', icon: 'Flower2', color: 'bg-amber-950/60 text-amber-300 border-amber-700/40' },
+  { id: 'river', label: 'Rivers & Water', icon: 'Droplets', color: 'bg-sky-950/60 text-sky-300 border-sky-700/40' },
+  { id: 'wildlife', label: 'Wildlife & Wings', icon: 'Feather', color: 'bg-orange-950/60 text-orange-300 border-orange-700/40' },
+  { id: 'winter', label: 'Winter & Frost', icon: 'Snowflake', color: 'bg-blue-950/60 text-blue-300 border-blue-700/40' },
+];
+
+export const MOOD_METADATA = [
+  { id: 'all', label: 'All Moods' },
+  { id: 'peace', label: 'Serene Peace' },
+  { id: 'wonder', label: 'Cosmic Wonder' },
+  { id: 'resilience', label: 'Quiet Strength' },
+  { id: 'healing', label: 'Gentle Healing' },
+  { id: 'solitude', label: 'Sacred Solitude' },
+  { id: 'gratitude', label: 'Deep Gratitude' },
+  { id: 'mindfulness', label: 'Pure Presence' },
+];

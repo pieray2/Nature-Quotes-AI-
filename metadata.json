@@ -1,0 +1,6 @@
+{
+  "name": "Nature Quotes AI",
+  "description": "An AI-powered sanctuary of contemplative nature quotes, philosophical reflections, ambient soundscapes, and customizable quote card maker.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
