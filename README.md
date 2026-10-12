@@ -183,15 +183,15 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## 🔑 Configuring a Live Gemma / Gemini Model
 
-### Option A: Google Gemma via Hugging Face Inference API
-1. Create a free account at [Hugging Face](https://huggingface.co/) and generate a user access token.
-2. Accept the Gemma license terms on the model page: [google/gemma-2-9b-it](https://huggingface.co/google/gemma-2-9b-it).
-3. In your `.env` file, configure:
+### Option A: Google Gemma via Hugging Face Access Token (`HF_TOKEN`)
+1. Create a free account at [Hugging Face](https://huggingface.co/) and generate a user access token at [Settings > Access Tokens](https://hf.co/settings/tokens).
+2. Accept the Gemma license terms on the model page: [google/gemma-3-4b-it](https://huggingface.co/google/gemma-3-4b-it) or [google/gemma-2-2b-it](https://huggingface.co/google/gemma-2-2b-it).
+3. In your environment variables or AI Studio Secrets, add:
    ```env
-   GEMMA_API_ENDPOINT="https://api-inference.huggingface.co/models/google/gemma-2-9b-it"
-   GEMMA_API_KEY="hf_your_huggingface_token_here"
-   GEMMA_MODEL_NAME="google/gemma-2-9b-it"
+   HF_TOKEN="hf_your_huggingface_token_here"
+   GEMMA_MODEL_NAME="google/gemma-3-4b-it"
    ```
+4. Note on Hugging Face Inference Providers: Hugging Face serverless provider routing requires pre-paid inference credits or an active HF PRO subscription (see [hf.co/settings/billing](https://hf.co/settings/billing)). If your account does not have inference credits, Nature Quotes AI will report the exact status and seamlessly provide verified curated offline wisdom and Gemini backup.
 
 ### Option B: Local Gemma via Ollama (Zero Cloud Dependencies)
 1. Install [Ollama](https://ollama.ai/).
