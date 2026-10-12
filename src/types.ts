@@ -8,16 +8,30 @@ export type NatureElement =
   | 'meadow'
   | 'wildlife'
   | 'river'
-  | 'winter';
+  | 'winter'
+  | 'flowers'
+  | 'sunrise'
+  | 'sustainability';
 
 export type NatureMood = 
   | 'all'
+  | 'calm'
+  | 'hopeful'
+  | 'motivated'
+  | 'grateful'
+  | 'gratitude'
+  | 'reflective'
   | 'peace'
   | 'wonder'
   | 'resilience'
   | 'solitude'
   | 'healing'
-  | 'gratitude'
+  | 'mindfulness';
+
+export type QuoteStyle = 
+  | 'poetic'
+  | 'philosophical'
+  | 'short and powerful'
   | 'mindfulness';
 
 export interface NatureQuote {
@@ -27,11 +41,13 @@ export interface NatureQuote {
   source?: string;
   element: NatureElement;
   mood: NatureMood;
+  style?: QuoteStyle;
   reflection: string;
   keywords: string[];
   bgImage?: string;
   suggestedPalette?: string;
   isAiGenerated?: boolean;
+  aiProvider?: 'gemma' | 'gemini' | 'curated';
   dateAdded?: string;
 }
 
@@ -51,16 +67,54 @@ export interface CardCustomization {
   aspectRatio: '1:1' | '4:5' | '16:9';
 }
 
-export interface SoundPreset {
+// Touch Grass Mission Types
+export type MissionDuration = 5 | 10 | 20 | 30;
+export type MissionLocation = 'balcony' | 'garden' | 'park' | 'street' | 'nearby outdoor space';
+export type MissionMood = 'stressed' | 'bored' | 'tired' | 'peaceful' | 'curious' | 'motivated';
+export type MissionActivityType = 'mindfulness' | 'walking' | 'observation' | 'photography' | 'eco-friendly action';
+export type MissionDifficulty = 'gentle' | 'moderate' | 'exploratory';
+
+export interface ChecklistItem {
   id: string;
-  name: string;
-  icon: string;
-  volumes: {
-    wind: number;
-    rain: number;
-    waves: number;
-    birds: number;
-    fire: number;
-    stream: number;
-  };
+  text: string;
+  done: boolean;
+}
+
+export interface TouchGrassMission {
+  id: string;
+  title: string;
+  instructions: string[];
+  durationMinutes: MissionDuration;
+  location: MissionLocation;
+  mood: MissionMood;
+  activityType: MissionActivityType;
+  difficulty: MissionDifficulty;
+  benefit: string;
+  checklist: ChecklistItem[];
+  isAiGenerated?: boolean;
+  aiProvider?: 'gemma' | 'gemini' | 'curated';
+  completedAt?: string;
+  createdAt?: string;
+}
+
+export interface CompletedMissionLog {
+  id: string;
+  missionId: string;
+  title: string;
+  durationMinutes: number;
+  completedAt: string;
+  location: string;
+  activityType: string;
+}
+
+export interface AiConnectionStatus {
+  hasGemmaConfig: boolean;
+  hasGeminiConfig: boolean;
+  activeProvider: 'gemma' | 'gemini' | 'curated';
+  gemmaModel: string;
+  gemmaEndpoint: string;
+  isOnline: boolean;
+  latencyMs?: number;
+  lastChecked?: string;
+  message?: string;
 }
